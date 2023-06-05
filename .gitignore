@@ -8,7 +8,7 @@
 # Ignore Artifacts
 ###
 *.o
-bin/
+build/
 
 ###
 # Ignore Backups
