@@ -1,7 +1,7 @@
 ISO-TP (ISO 15765-2) Support Library for Qt
 ================================
 
-**Fork of [lishen2/isotp-c](https://github.com/lishen2/isotp-c) and adapted to be used with the Qt framework.
+**Fork of [lishen2/isotp-c](https://github.com/lishen2/isotp-c) and adapted to be used with the Qt framework.**
 
 ## Authors
 

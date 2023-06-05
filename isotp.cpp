@@ -34,8 +34,9 @@ Isotp::~Isotp()
     delete sendbuf;
     delete recvbuf;
     delete link;
+    pollTimer->stop();
+    pollTimer->deleteLater();
 }
-
 
 void Isotp::send(QByteArray payload)
 {
@@ -70,7 +71,7 @@ void Isotp::send_with_id(quint32 id, QByteArray payload)
 
     if (link->send_size < 8) {
         /* send single frame */
-        ret = isotp_send_single_frame(id);
+        isotp_send_single_frame(id);
     } else {
         /* send multi-frame */
         ret = isotp_send_first_frame(id);
@@ -86,8 +87,6 @@ void Isotp::send_with_id(quint32 id, QByteArray payload)
             link->send_status = ISOTP_SEND_STATUS_INPROGRESS;
         }
     }
-
-    return;
 }
 
 quint8 Isotp::isotp_ms_to_st_min(quint8 ms)
@@ -120,7 +119,6 @@ quint8 Isotp::isotp_st_min_to_ms(quint8 st_min)
 int Isotp::isotp_send_flow_control(quint8 flow_status, quint8 block_size, quint8 st_min_ms)
 {
     IsoTpCanMessage message;
-
 
     /* setup message  */
     message.as.flow_control.type = ISOTP_PCI_TYPE_FLOW_CONTROL_FRAME;
@@ -352,6 +350,7 @@ int Isotp::isotp_receive_consecutive_frame(IsoTpCanMessage &message, quint8 len)
 
 int Isotp::isotp_receive_flow_control_frame(IsoTpCanMessage &message, quint8 len)
 {
+    Q_UNUSED(message);
     /* check message length */
     if (len < 3) {
         qDebug("Flow control frame too short.");
@@ -380,23 +379,26 @@ int Isotp::receive(QByteArray &payload)
     return ISOTP_RET_OK;
 }
 
-void Isotp::init_link(quint32 sendid)
+void Isotp::init_link(quint32 sendId, quint16 sendBufSize, quint16 recvBufSize, quint16 pollInterval)
 {
-    sendbuf = new quint8[SEND_BUF_SIZE];
-    recvbuf = new quint8[RECV_BUF_SIZE];
-    link = new IsoTpLink;
+    pollTimer = new QTimer(this);
+    pollTimer->setInterval(pollInterval);
+    QObject::connect(pollTimer, &QTimer::timeout, this, &Isotp::poll);
 
+    sendbuf = new quint8[sendBufSize];
+    recvbuf = new quint8[recvBufSize];
+    link = new IsoTpLink;
 
     ::memset(link, 0, sizeof(IsoTpLink));
     link->receive_status = ISOTP_RECEIVE_STATUS_IDLE;
     link->send_status = ISOTP_SEND_STATUS_IDLE;
-    link->send_arbitration_id = sendid;
+    link->send_arbitration_id = sendId;
     link->send_buffer = sendbuf;
-    link->send_buf_size = SEND_BUF_SIZE;
+    link->send_buf_size = sendBufSize;
     link->receive_buffer = recvbuf;
-    link->receive_buf_size = RECV_BUF_SIZE;
+    link->receive_buf_size = recvBufSize;
 
-    return;
+    pollTimer->start();
 }
 
 void Isotp::poll()
@@ -445,12 +447,11 @@ void Isotp::poll()
             link->receive_status = ISOTP_RECEIVE_STATUS_IDLE;
         }
     }
-
-    return;
 }
 
 void Isotp::on_can_message(QCanBusFrame frame)
 {
+    qDebug() << "New message: " << frame.payload().toHex();
     IsoTpCanMessage message;
     int ret;
 
@@ -458,8 +459,8 @@ void Isotp::on_can_message(QCanBusFrame frame)
         return;
     }
 
-    memcpy(message.as.data_array.ptr, frame.payload().data(), frame.payload().length());
-    memset(message.as.data_array.ptr + frame.payload().length(), 0, sizeof(message.as.data_array.ptr) - frame.payload().length());
+    ::memcpy(message.as.data_array.ptr, frame.payload().data_ptr()->data(), frame.payload().length());
+    ::memset(message.as.data_array.ptr + frame.payload().length(), 0, sizeof(message.as.data_array.ptr) - frame.payload().length());
 
     switch (message.as.common.type) {
         case ISOTP_PCI_TYPE_SINGLE: {
@@ -594,8 +595,6 @@ void Isotp::on_can_message(QCanBusFrame frame)
         default:
             break;
     };
-
-    return;
 }
 
 

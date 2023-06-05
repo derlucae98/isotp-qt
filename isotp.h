@@ -21,12 +21,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
 #ifndef ISOTP_H
 #define ISOTP_H
 
 #include <QObject>
 #include <QCanBusFrame>
 #include <QDebug>
+#include <QTimer>
 
 /* Max number of messages the receiver can receive at one time, this value
  * is affectied by can driver queue length
@@ -52,9 +54,6 @@ SOFTWARE.
  */
 #define ISO_TP_FRAME_PADDING
 
-#define RECV_BUF_SIZE 4095
-#define SEND_BUF_SIZE 4095
-
 class Isotp : public QObject
 {
     Q_OBJECT
@@ -62,9 +61,9 @@ public:
     explicit Isotp(QObject *parent = nullptr);
     ~Isotp();
 
+    void init_link(quint32 sendId, quint16 sendBufSize, quint16 recvBufSize, quint16 pollInterval);
+
     int receive(QByteArray &payload);
-    void init_link(quint32 sendid);
-    void poll();
     void send(QByteArray payload);
     void send_with_id(quint32 id, QByteArray payload);
 
@@ -333,6 +332,7 @@ private:
     #define ISOTP_PROTOCOL_RESULT_BUFFER_OVFLW -8
     #define ISOTP_PROTOCOL_RESULT_ERROR        -9
 
+
     quint8 isotp_ms_to_st_min(quint8 ms);
     quint8 isotp_st_min_to_ms(quint8 st_min);
     int isotp_send_flow_control(quint8 flow_status, quint8 block_size, quint8 st_min_ms);
@@ -343,18 +343,16 @@ private:
     int isotp_receive_first_frame(IsoTpCanMessage &message, quint8 len);
     int isotp_receive_consecutive_frame(IsoTpCanMessage &message, quint8 len);
     int isotp_receive_flow_control_frame(IsoTpCanMessage &message, quint8 len);
+    void poll();
+
+    QTimer *pollTimer = nullptr;
 
     quint8 *sendbuf = nullptr;
     quint8 *recvbuf = nullptr;
 
-
-
 signals:
 
     void send_can(QCanBusFrame frame);
-
-
-
 };
 
 #endif // ISOTP_H

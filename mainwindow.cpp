@@ -6,18 +6,15 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    timer = new QTimer(this);
-    timer->setInterval(10);
-    connect_can();
 
+    connect_can();
 
     isotp = new Isotp(this);
 
     QObject::connect(isotp, &Isotp::send_can, this, &MainWindow::can_send);
     QObject::connect(this, &MainWindow::new_message, isotp, &Isotp::on_can_message);
-    QObject::connect(timer, &QTimer::timeout, isotp, &Isotp::poll);
-    isotp->init_link(0x013);
-    timer->start();
+
+    isotp->init_link(ISOTP_UPLINK, SEND_BUF_SIZE, RECV_BUF_SIZE, 10);
 }
 
 MainWindow::~MainWindow()
@@ -28,9 +25,7 @@ MainWindow::~MainWindow()
 void MainWindow::can_send(QCanBusFrame frame)
 {
     if (can_device && can_device->state() == QCanBusDevice::ConnectedState) {
-
         can_device->writeFrame(frame);
-
     }
 }
 
@@ -54,7 +49,7 @@ void MainWindow::can_recv()
 {
     while (can_device->framesAvailable()) {
         QCanBusFrame frame = can_device->readFrame();
-        if (frame.frameId() == 0x012) {
+        if (frame.frameId() == ISOTP_DOWNLINK) {
             emit new_message(frame);
         }
     }

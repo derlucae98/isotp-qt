@@ -6,6 +6,11 @@
 #include <QTimer>
 #include "can.h"
 
+#define RECV_BUF_SIZE 4095
+#define SEND_BUF_SIZE 4095
+#define ISOTP_UPLINK 0x013
+#define ISOTP_DOWNLINK 0x012
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -22,7 +27,6 @@ private:
     Ui::MainWindow *ui;
     Isotp *isotp = nullptr;
     void can_send(QCanBusFrame frame);
-    QTimer *timer = nullptr;
     void connect_can();
     QCanBusDevice *can_device = nullptr;
     void can_recv();
