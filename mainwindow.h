@@ -30,6 +30,7 @@ private:
     void connect_can();
     QCanBusDevice *can_device = nullptr;
     void can_recv();
+    void on_new_isotp_message(QByteArray message);
 
 signals:
     void new_message(QCanBusFrame);

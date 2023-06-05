@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     QObject::connect(isotp, &Isotp::send_can, this, &MainWindow::can_send);
     QObject::connect(this, &MainWindow::new_message, isotp, &Isotp::on_can_message);
+    QObject::connect(isotp, &Isotp::new_message, this, &MainWindow::on_new_isotp_message);
 
     isotp->init_link(ISOTP_UPLINK, SEND_BUF_SIZE, RECV_BUF_SIZE, 10);
 }
@@ -53,6 +54,11 @@ void MainWindow::can_recv()
             emit new_message(frame);
         }
     }
+}
+
+void MainWindow::on_new_isotp_message(QByteArray message)
+{
+    qDebug() << "New ISOTP message: " << message.toHex();
 }
 
 void MainWindow::on_pushButton_clicked()

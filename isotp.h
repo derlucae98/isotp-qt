@@ -62,8 +62,6 @@ public:
     ~Isotp();
 
     void init_link(quint32 sendId, quint16 sendBufSize, quint16 recvBufSize, quint16 pollInterval);
-
-    int receive(QByteArray &payload);
     void send(QByteArray payload);
     void send_with_id(quint32 id, QByteArray payload);
 
@@ -344,6 +342,8 @@ private:
     int isotp_receive_consecutive_frame(IsoTpCanMessage &message, quint8 len);
     int isotp_receive_flow_control_frame(IsoTpCanMessage &message, quint8 len);
     void poll();
+    int receive(QByteArray &payload);
+    void on_timeout();
 
     QTimer *pollTimer = nullptr;
 
@@ -353,6 +353,7 @@ private:
 signals:
 
     void send_can(QCanBusFrame frame);
+    void new_message(QByteArray message);
 };
 
 #endif // ISOTP_H

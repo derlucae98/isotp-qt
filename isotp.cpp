@@ -67,7 +67,7 @@ void Isotp::send_with_id(quint32 id, QByteArray payload)
     /* copy into local buffer */
     link->send_size = payload.size();
     link->send_offset = 0;
-    (void) memcpy(link->send_buffer, payload, payload.size());
+    (void) ::memcpy(link->send_buffer, payload.data_ptr()->data(), payload.size());
 
     if (link->send_size < 8) {
         /* send single frame */
@@ -383,7 +383,7 @@ void Isotp::init_link(quint32 sendId, quint16 sendBufSize, quint16 recvBufSize, 
 {
     pollTimer = new QTimer(this);
     pollTimer->setInterval(pollInterval);
-    QObject::connect(pollTimer, &QTimer::timeout, this, &Isotp::poll);
+    QObject::connect(pollTimer, &QTimer::timeout, this, &Isotp::on_timeout);
 
     sendbuf = new quint8[sendBufSize];
     recvbuf = new quint8[recvBufSize];
@@ -449,9 +449,18 @@ void Isotp::poll()
     }
 }
 
+void Isotp::on_timeout()
+{
+    poll();
+    QByteArray payload;
+    int ret = receive(payload);
+    if (ISOTP_RET_OK == ret) {
+        emit new_message(payload);
+    }
+}
+
 void Isotp::on_can_message(QCanBusFrame frame)
 {
-    qDebug() << "New message: " << frame.payload().toHex();
     IsoTpCanMessage message;
     int ret;
 
