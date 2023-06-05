@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(this, &MainWindow::new_message, isotp, &Isotp::on_can_message);
     QObject::connect(isotp, &Isotp::new_message, this, &MainWindow::on_new_isotp_message);
 
-    isotp->init_link(ISOTP_UPLINK, SEND_BUF_SIZE, RECV_BUF_SIZE, 10);
+    isotp->init_link(ISOTP_UPLINK, SEND_BUF_SIZE, RECV_BUF_SIZE, 5);
 }
 
 MainWindow::~MainWindow()
@@ -44,6 +44,7 @@ void MainWindow::connect_can()
     }
     QObject::connect(can_device, &QCanBusDevice::framesReceived, this, &MainWindow::can_recv);
     qDebug("Can init successful");
+    can_device->clear();
 }
 
 void MainWindow::can_recv()
@@ -58,7 +59,7 @@ void MainWindow::can_recv()
 
 void MainWindow::on_new_isotp_message(QByteArray message)
 {
-    qDebug() << "New ISOTP message: " << message.toHex();
+    qDebug() << "New ISOTP message. Len: " << message.length();
 }
 
 void MainWindow::on_pushButton_clicked()

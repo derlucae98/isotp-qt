@@ -29,6 +29,7 @@ SOFTWARE.
 #include <QCanBusFrame>
 #include <QDebug>
 #include <QTimer>
+#include <QDateTime>
 
 /* Max number of messages the receiver can receive at one time, this value
  * is affectied by can driver queue length
@@ -43,12 +44,12 @@ SOFTWARE.
 /* This parameter indicate how many FC N_PDU WTs can be transmitted by the
  * receiver in a row.
  */
-#define ISO_TP_MAX_WFT_NUMBER       1
+#define ISO_TP_MAX_WFT_NUMBER       10
 
 /* Private: The default timeout to use when waiting for a response during a
  * multi-frame send or receive.
  */
-#define ISO_TP_DEFAULT_RESPONSE_TIMEOUT 100
+#define ISO_TP_DEFAULT_RESPONSE_TIMEOUT 1000
 
 /* Private: Determines if by default, padding is added to ISO-TP message frames.
  */
@@ -346,7 +347,7 @@ private:
     void on_timeout();
 
     QTimer *pollTimer = nullptr;
-
+    QDateTime *millis = nullptr;
     quint8 *sendbuf = nullptr;
     quint8 *recvbuf = nullptr;
 

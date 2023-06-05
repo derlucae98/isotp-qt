@@ -26,7 +26,7 @@ SOFTWARE.
 
 Isotp::Isotp(QObject *parent) : QObject(parent)
 {
-
+    millis = new QDateTime();
 }
 
 Isotp::~Isotp()
@@ -81,8 +81,8 @@ void Isotp::send_with_id(quint32 id, QByteArray payload)
             link->send_bs_remain = 0;
             link->send_st_min = 0;
             link->send_wtf_count = 0;
-            link->send_timer_st = clock();
-            link->send_timer_bs = clock() + ISO_TP_DEFAULT_RESPONSE_TIMEOUT;
+            link->send_timer_st = millis->toMSecsSinceEpoch();
+            link->send_timer_bs = millis->toMSecsSinceEpoch() + ISO_TP_DEFAULT_RESPONSE_TIMEOUT;
             link->send_protocol_result = ISOTP_PROTOCOL_RESULT_OK;
             link->send_status = ISOTP_SEND_STATUS_INPROGRESS;
         }
@@ -412,15 +412,15 @@ void Isotp::poll()
         if (/* send data if bs_remain is invalid or bs_remain large than zero */
         (ISOTP_INVALID_BS == link->send_bs_remain || link->send_bs_remain > 0) &&
         /* and if st_min is zero or go beyond interval time */
-        (0 == link->send_st_min || (0 != link->send_st_min && IsoTpTimeAfter(clock(), link->send_timer_st)))) {
+        (0 == link->send_st_min || (0 != link->send_st_min && IsoTpTimeAfter(millis->toMSecsSinceEpoch(), link->send_timer_st)))) {
 
             ret = isotp_send_consecutive_frame();
             if (ISOTP_RET_OK == ret) {
                 if (ISOTP_INVALID_BS != link->send_bs_remain) {
                     link->send_bs_remain -= 1;
                 }
-                link->send_timer_bs = clock() + ISO_TP_DEFAULT_RESPONSE_TIMEOUT;
-                link->send_timer_st = clock() + link->send_st_min;
+                link->send_timer_bs = millis->toMSecsSinceEpoch() + ISO_TP_DEFAULT_RESPONSE_TIMEOUT;
+                link->send_timer_st = millis->toMSecsSinceEpoch() + link->send_st_min;
 
                 /* check if send finish */
                 if (link->send_offset >= link->send_size) {
@@ -432,7 +432,7 @@ void Isotp::poll()
         }
 
         /* check timeout */
-        if (IsoTpTimeAfter(clock(), link->send_timer_bs)) {
+        if (IsoTpTimeAfter(millis->toMSecsSinceEpoch(), link->send_timer_bs)) {
             link->send_protocol_result = ISOTP_PROTOCOL_RESULT_TIMEOUT_BS;
             link->send_status = ISOTP_SEND_STATUS_ERROR;
         }
@@ -442,7 +442,7 @@ void Isotp::poll()
     if (ISOTP_RECEIVE_STATUS_INPROGRESS == link->receive_status) {
 
         /* check timeout */
-        if (IsoTpTimeAfter(clock(), link->receive_timer_cr)) {
+        if (IsoTpTimeAfter(millis->toMSecsSinceEpoch(), link->receive_timer_cr)) {
             link->receive_protocol_result = ISOTP_PROTOCOL_RESULT_TIMEOUT_CR;
             link->receive_status = ISOTP_RECEIVE_STATUS_IDLE;
         }
@@ -519,7 +519,7 @@ void Isotp::on_can_message(QCanBusFrame frame)
                 link->receive_bs_count = ISO_TP_DEFAULT_BLOCK_SIZE;
                 isotp_send_flow_control(PCI_FLOW_STATUS_CONTINUE, link->receive_bs_count, ISO_TP_DEFAULT_ST_MIN);
                 /* refresh timer cs */
-                link->receive_timer_cr = clock() + ISO_TP_DEFAULT_RESPONSE_TIMEOUT;
+                link->receive_timer_cr = millis->toMSecsSinceEpoch() + ISO_TP_DEFAULT_RESPONSE_TIMEOUT;
             }
 
             break;
@@ -544,7 +544,7 @@ void Isotp::on_can_message(QCanBusFrame frame)
             /* if success */
             if (ISOTP_RET_OK == ret) {
                 /* refresh timer cs */
-                link->receive_timer_cr = clock() + ISO_TP_DEFAULT_RESPONSE_TIMEOUT;
+                link->receive_timer_cr = millis->toMSecsSinceEpoch() + ISO_TP_DEFAULT_RESPONSE_TIMEOUT;
 
                 /* receive finished */
                 if (link->receive_offset >= link->receive_size) {
@@ -571,7 +571,7 @@ void Isotp::on_can_message(QCanBusFrame frame)
 
             if (ISOTP_RET_OK == ret) {
                 /* refresh bs timer */
-                link->send_timer_bs = clock() + ISO_TP_DEFAULT_RESPONSE_TIMEOUT;
+                link->send_timer_bs = millis->toMSecsSinceEpoch() + ISO_TP_DEFAULT_RESPONSE_TIMEOUT;
 
                 /* overflow */
                 if (PCI_FLOW_STATUS_OVERFLOW == message.as.flow_control.FS) {
